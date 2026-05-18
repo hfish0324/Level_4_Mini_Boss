@@ -4,202 +4,157 @@ var canvas;
 var context;
 var timer;
 var interval;
-
 var player;
-var hook;
 
-var water;
+var platform0;
+var platform1;
+var platform2;
+var platform3;
+var platforms;
 
-var fish0;
-var fish1;
-var fish2;
-var fish;
+var goal;
 
-var lineCast = false;
-var castPower = 0;
 
-var gravity = 0.8;
+	canvas = document.getElementById("canvas");
+	context = canvas.getContext("2d");	
 
-var fX = .98;
-var fY = .99;
+	player = new GameObject({x:100, y:canvas.height/2-100});
 
-canvas = document.getElementById("canvas");
-context = canvas.getContext("2d");
+	platform0 = new GameObject();
+		platform0.width = 200;
+		platform0.x = platform0.width/2;
+		platform0.y = canvas.height - platform0.height/2;
+		platform0.color = "#66ff33";
 
-//Fishing rod position
-player = new GameObject({
-	x: canvas.width/2,
-	y: 80,
-	width: 40,
-	height: 40,
-	color: "#663300"
-});
+	// Moving Platforms
 
-//Hook
-hook = new GameObject({
-	x: player.x,
-	y: player.y,
-	width: 12,
-	height: 12,
-	color: "#ff0000"
-});
+	platform1 = new GameObject({width:120, height:20, x:250, y:canvas.height-180, color:"#ff9933"});
+	platform1.speed = 3;
 
-//Water
-water = new GameObject({
-	x: canvas.width/2,
-	y: canvas.height - 80,
-	width: canvas.width,
-	height: 160,
-	color: "#3399ff"
-});
+	platform2 = new GameObject({width:120, height:20, x:500, y:canvas.height-300, color:"#ff9933"});
+	platform2.speed = -2;
 
-//Fish
-fish0 = new GameObject({
-	x: 250,
-	y: canvas.height - 70,
-	width: 30,
-	height: 20,
-	color:"#ffff00"
-});
+	platform3 = new GameObject({width:120, height:20, x:700, y:canvas.height-420, color:"#ff9933"});
+	platform3.speed = 2.5;
 
-fish1 = new GameObject({
-	x: 450,
-	y: canvas.height - 90,
-	width: 30,
-	height: 20,
-	color:"#ff9933"
-});
+	platforms = [platform0, platform1, platform2, platform3];
+		
+	goal = new GameObject({width:24, height:50, x:canvas.width-50, y:100, color:"#00ffff"});
+	
 
-fish2 = new GameObject({
-	x: 650,
-	y: canvas.height - 60,
-	width: 30,
-	height: 20,
-	color:"#ff66cc"
-});
+	var fX = .85;
+	var fY = .97;
+	
+	var gravity = 1;
 
-fish = [fish0, fish1, fish2];
-
-interval = 1000/60;
-timer = setInterval(animate, interval);
+	interval = 1000/60;
+	timer = setInterval(animate, interval);
 
 function animate()
 {
-	context.clearRect(0,0,canvas.width, canvas.height);
+	
+	context.clearRect(0,0,canvas.width, canvas.height);	
 
-	//Sky
-	context.fillStyle = "#99ddff";
-	context.fillRect(0,0,canvas.width, canvas.height);
-
-	//Cast Power
-	if(w && !lineCast)
+	if(w && player.canJump && player.vy ==0)
 	{
-		castPower += .4;
+		player.canJump = false;
+		player.vy += player.jumpHeight;
+	}
 
-		if(castPower > 20)
+	if(a)
+	{
+		player.vx += -player.ax * player.force;
+	}
+	if(d)
+	{
+		player.vx += player.ax * player.force;
+	}
+
+	// Move Platforms 
+
+	for(let i = 1; i < platforms.length; i++)
+	{
+		platforms[i].x += platforms[i].speed;
+
+		if(platforms[i].x + platforms[i].width/2 >= canvas.width || 
+		   platforms[i].x - platforms[i].width/2 <= 0)
 		{
-			castPower = 20;
+			platforms[i].speed *= -1;
 		}
 	}
 
-	//Release Cast
-	if(!w && castPower > 0 && !lineCast)
+	player.vx *= fX;
+	player.vy *= fY;
+	
+	player.vy += gravity;
+	
+	player.x += Math.round(player.vx);
+	player.y += Math.round(player.vy);
+	
+
+	// Platform Collision
+
+	for(let i = 0; i < platforms.length; i++)
 	{
-		hook.x = player.x;
-		hook.y = player.y;
+		let p = platforms[i];
 
-		hook.vx = castPower * .6;
-		hook.vy = -castPower * .9;
-
-		lineCast = true;
-		castPower = 0;
-	}
-
-	//Hook Physics
-	if(lineCast)
-	{
-		hook.vy += gravity;
-
-		hook.vx *= fX;
-		hook.vy *= fY;
-
-		hook.x += Math.round(hook.vx);
-		hook.y += Math.round(hook.vy);
-
-		//Water Resistance
-		if(hook.hitTestObject(water))
+		while(p.hitTestPoint(player.bottom()) && player.vy >=0)
 		{
-			hook.vx *= .9;
-			hook.vy *= .9;
-		}
-	}
-	else
-	{
-		hook.x = player.x;
-		hook.y = player.y;
-	}
+			player.y--;
+			player.vy = 0;
+			player.canJump = true;
 
-	//Fish Movement + Catching
-	for(let i = 0; i < fish.length; i++)
-	{
-		fish[i].x += Math.sin(Date.now()/500 + i) * .5;
-
-		if(lineCast && hook.hitTestObject(fish[i]))
-		{
-			fish[i].caught = true;
+			//Move player with moving platform
+			if(i > 0)
+			{
+				player.x += p.speed;
+			}
 		}
 
-		if(fish[i].caught)
+		while(p.hitTestPoint(player.left()) && player.vx <=0)
 		{
-			fish[i].x = hook.x;
-			fish[i].y = hook.y - 20;
+			player.x++;
+			player.vx = 0;
+		}
+
+		while(p.hitTestPoint(player.right()) && player.vx >=0)
+		{
+			player.x--;
+			player.vx = 0;
+		}
+
+		while(p.hitTestPoint(player.top()) && player.vy <=0)
+		{
+			player.y++;
+			player.vy = 0;
 		}
 	}
-
-	//Reel In
-	if(s && lineCast)
+	
+	
+	//---------Objective: Treasure!!!!!!!---------------------------------------------------------------------------------------------------- 
+	//---------Run this program first.
+	//---------Get Creative. Find a new way to get your player from the platform to the pearl. 
+	//---------You can do anything you would like except break the following rules:
+	//---------RULE1: You cannot spawn your player on the pearl!
+	//---------RULE2: You cannot change the innitial locations of platform0 or the goal! 
+		
+	if(player.hitTestObject(goal))
 	{
-		hook.y -= 5;
+		goal.y = 10000;
 
-		if(hook.y <= player.y + 20)
-		{
-			lineCast = false;
-			hook.vx = 0;
-			hook.vy = 0;
-		}
+		context.fillStyle = "black";
+		context.font = "40px Arial";
+		context.textAlign = "center";
+		context.fillText("You Win!!!", canvas.width/2, canvas.height/2);
+	}
+	
+
+	for(let i = 0; i < platforms.length; i++)
+	{
+		platforms[i].drawRect();
 	}
 
-	//Reset Hook
-	if(hook.y > canvas.height + 100)
-	{
-		lineCast = false;
-		hook.vx = 0;
-		hook.vy = 0;
-	}
-
-	//Draw Water
-	water.drawRect();
-
-	//Draw Fish
-	for(let i = 0; i < fish.length; i++)
-	{
-		if(!fish[i].caught)
-		{
-			fish[i].drawRect();
-		}
-	}
-
-	//Fishing Line
-	player.drawLine(hook);
-
-	//Draw Objects
+	//Show hit points
 	player.drawRect();
-	hook.drawCircle();
-
-	//UI
-	context.fillStyle = "black";
-	context.font = "20px Arial";
-	context.fillText("Hold W To Cast", 20, 30);
-	context.fillText("Press S To Reel In", 20, 60);
-	context.fillText("Power: " + Math.round(castPower), 20, 90);
+	goal.drawCircle();
 }
