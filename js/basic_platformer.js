@@ -159,4 +159,4 @@ function animate()
 	goal.drawCircle();
 }
 
-// Testing
+// Resolved
