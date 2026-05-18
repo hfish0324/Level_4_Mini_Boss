@@ -1,4 +1,3 @@
-
 function GameObject(obj)
 {	
 		this.x = canvas.width/2;
@@ -15,6 +14,11 @@ function GameObject(obj)
 	//whether or not the object can jump
 	this.canJump = false;
 	this.jumpHeight = -25;
+
+	//Fishing variables
+	this.caught = false;
+	this.inWater = false;
+	this.speed = 0;
 	
 	//------Allows us to pass object literals into the class to define its properties--------//
 		//------This eliminate the need to pass in the property arguments in a specific order------------//
@@ -58,12 +62,12 @@ function GameObject(obj)
 		this.y += this.vy;
 	}
 	
-	
 	//---------Returns object's for the top, bottom, left and right of an object's bounding box.
 	this.left = function() 
 	{
 		return {x:this.x - this.width/2 , y:this.y}
 	}
+
 	this.right = function() 
 	{
 		return {x:this.x + this.width/2 , y:this.y}
@@ -73,6 +77,7 @@ function GameObject(obj)
 	{
 		return {x:this.x, y:this.y - this.height/2}
 	}
+
 	this.bottom = function() 
 	{
 		return {x:this.x , y:this.y + this.height/2}
@@ -85,7 +90,7 @@ function GameObject(obj)
 		   this.top().y <= obj.bottom().y &&
 		   this.bottom().y >= obj.top().y)
 		{
-			return true
+			return true;
 		}
 		return false;
 	}
@@ -106,7 +111,20 @@ function GameObject(obj)
 	/*-----Sets or gets the radius value--------*/
 	this.radius = function(newRadius)
 	{
-			return this.width/2; 
+		return this.width/2; 
+	}
+
+	//Draw fishing line
+	this.drawLine = function(target)
+	{
+		context.save();
+			context.beginPath();
+			context.moveTo(this.x, this.y);
+			context.lineTo(target.x, target.y);
+			context.strokeStyle = "black";
+			context.lineWidth = 2;
+			context.stroke();
+		context.restore();
 	}
 	
 	//Draws the collision points
