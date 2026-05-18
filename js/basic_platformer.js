@@ -6,6 +6,14 @@ var timer;
 var interval;
 var player;
 
+var platform0;
+var platform1;
+var platform2;
+var platform3;
+var platforms;
+
+var goal;
+
 
 	canvas = document.getElementById("canvas");
 	context = canvas.getContext("2d");	
@@ -18,12 +26,18 @@ var player;
 		platform0.y = canvas.height - platform0.height/2;
 		platform0.color = "#66ff33";
 
-	jumpPad = new GameObject();
-		jumpPad.width = 200;
-		jumpPad.height = 20;
-		jumpPad.color = "blue"
-		jumpPad.x = 450
-		jumpPad.y = 600
+	// Moving Platforms
+
+	platform1 = new GameObject({width:120, height:20, x:250, y:canvas.height-180, color:"#ff9933"});
+	platform1.speed = 3;
+
+	platform2 = new GameObject({width:120, height:20, x:500, y:canvas.height-300, color:"#ff9933"});
+	platform2.speed = -2;
+
+	platform3 = new GameObject({width:120, height:20, x:700, y:canvas.height-420, color:"#ff9933"});
+	platform3.speed = 2.5;
+
+	platforms = [platform0, platform1, platform2, platform3];
 		
 	goal = new GameObject({width:24, height:50, x:canvas.width-50, y:100, color:"#00ffff"});
 	
@@ -56,6 +70,19 @@ function animate()
 		player.vx += player.ax * player.force;
 	}
 
+	// Move Platforms 
+
+	for(let i = 1; i < platforms.length; i++)
+	{
+		platforms[i].x += platforms[i].speed;
+
+		if(platforms[i].x + platforms[i].width/2 >= canvas.width || 
+		   platforms[i].x - platforms[i].width/2 <= 0)
+		{
+			platforms[i].speed *= -1;
+		}
+	}
+
 	player.vx *= fX;
 	player.vy *= fY;
 	
@@ -65,26 +92,42 @@ function animate()
 	player.y += Math.round(player.vy);
 	
 
-	while(platform0.hitTestPoint(player.bottom()) && player.vy >=0)
+	// Platform Collision
+
+	for(let i = 0; i < platforms.length; i++)
 	{
-		player.y--;
-		player.vy = 0;
-		player.canJump = true;
-	}
-	while(platform0.hitTestPoint(player.left()) && player.vx <=0)
-	{
-		player.x++;
-		player.vx = 0;
-	}
-	while(platform0.hitTestPoint(player.right()) && player.vx >=0)
-	{
-		player.x--;
-		player.vx = 0;
-	}
-	while(platform0.hitTestPoint(player.top()) && player.vy <=0)
-	{
-		player.y++;
-		player.vy = 0;
+		let p = platforms[i];
+
+		while(p.hitTestPoint(player.bottom()) && player.vy >=0)
+		{
+			player.y--;
+			player.vy = 0;
+			player.canJump = true;
+
+			//Move player with moving platform
+			if(i > 0)
+			{
+				player.x += p.speed;
+			}
+		}
+
+		while(p.hitTestPoint(player.left()) && player.vx <=0)
+		{
+			player.x++;
+			player.vx = 0;
+		}
+
+		while(p.hitTestPoint(player.right()) && player.vx >=0)
+		{
+			player.x--;
+			player.vx = 0;
+		}
+
+		while(p.hitTestPoint(player.top()) && player.vy <=0)
+		{
+			player.y++;
+			player.vy = 0;
+		}
 	}
 	
 	
@@ -98,20 +141,18 @@ function animate()
 	if(player.hitTestObject(goal))
 	{
 		goal.y = 10000;
-		context.textAlign = "center";
-		context.drawText("You Win!!!", canvas.width/2, canvas.height/2);
-	}
 
-	if(player.hitTestObject(jumpPad))
-	{
-		player.vy += -55;
-		player.vx += 60;
-		jumpPad.color = "red";
+		context.fillStyle = "black";
+		context.font = "40px Arial";
+		context.textAlign = "center";
+		context.fillText("You Win!!!", canvas.width/2, canvas.height/2);
 	}
 	
-	
-	platform0.drawRect();
-	jumpPad.drawRect();
+
+	for(let i = 0; i < platforms.length; i++)
+	{
+		platforms[i].drawRect();
+	}
 
 	//Show hit points
 	player.drawRect();
