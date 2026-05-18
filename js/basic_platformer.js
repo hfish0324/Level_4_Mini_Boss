@@ -158,3 +158,5 @@ function animate()
 	player.drawRect();
 	goal.drawCircle();
 }
+
+// Testing
